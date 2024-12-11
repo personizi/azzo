@@ -2,8 +2,8 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Usuario } from '../../../infrastructure/database/entities';
-import { IUserRepository } from 'src/domain/repositories/user.repository.interface';
-import { ISharedRepository } from 'src/domain/repositories/shared.repository.interface';
+import { IUserRepository } from '../../../domain/repositories/user.repository.interface';
+import { ISharedRepository } from '../../../domain/repositories/shared.repository.interface';
 import { UpdateUserDto } from '../dto/update-user.dto';
 
 @Injectable()
@@ -11,15 +11,15 @@ export class UsersService implements IUserRepository {
   @Inject('ISharedRepository') private readonly sharedService: ISharedRepository;
   constructor(@InjectRepository(Usuario) private readonly userRepository: Repository<Usuario>) {}
 
-  async findByEmail(email: string): Promise<Usuario> {
-    return this.userRepository.findOne({ where: { email }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
+  async findBy(param: Partial<Usuario>): Promise<Usuario | null> {
+    return this.userRepository.findOne({ where: param, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
   }
 
   async findAll(): Promise<Usuario[]> {
     return this.userRepository.find({ relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
   }
 
-  async findById(id: number): Promise<Partial<Usuario>> {
+  async findById(id: number): Promise<Usuario> {
     return this.userRepository.findOne({ where: { usuario_id: id }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
   }
 
@@ -27,7 +27,7 @@ export class UsersService implements IUserRepository {
     return this.userRepository.save(user);
   }
 
-  async update(id: number, user: UpdateUserDto): Promise<Partial<Usuario>> {
+  async update(id: number, user: UpdateUserDto): Promise<Usuario> {
     const { cargo_id, regiao_id, cidade_id, ...rest } = user;
 
     // Obtém as entidades relacionadas para cargo, cidade e regiao, se fornecidos
@@ -35,7 +35,7 @@ export class UsersService implements IUserRepository {
 
     const updateData: Partial<Usuario> = {
       ...rest,
-      ...(cargo && { cargo }), // Atualiza cargo apenas se fornecido
+      cargo: cargo_id === null ? null : cargo, // Atualiza cargo apenas se fornecido
       ...(cidade && { cidade }), // Atualiza cidade apenas se fornecido
       ...(regiao && { regiao }), // Atualiza regiao apenas se fornecido
     };
@@ -45,6 +45,7 @@ export class UsersService implements IUserRepository {
     // Retorna o usuário atualizado
     return this.findById(id);
   }
+
   async remove(id: number): Promise<{ message: string }> {
     const result = await this.userRepository.delete(id);
 
@@ -53,5 +54,18 @@ export class UsersService implements IUserRepository {
     }
 
     return { message: 'Usuário deletado com sucesso.' };
+  }
+
+  findUsersByRole(cargo_id: number): Promise<Usuario[]> {
+    return this.userRepository.find({ where: { cargo: { cargo_id } }, relations: ['cargo', 'cidade', 'cidade.estado', 'regiao'] });
+  }
+
+  async updateUserPhotoUrl(id: number, fotoUrl: string): Promise<void> {
+    const usuario = await this.findById(id);
+    if (!usuario) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+    usuario.fotoUrl = fotoUrl;
+    await this.userRepository.save(usuario);
   }
 }

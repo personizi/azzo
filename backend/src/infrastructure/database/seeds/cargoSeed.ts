@@ -13,7 +13,7 @@ export class CargoSeed implements Seeder {
       { nome: 'Gerente' },
       { nome: 'Analista' },
       { nome: 'Estagiário' },
-      { nome: 'Auxiliar' },
+      { nome: 'Administrador' },
     ];
 
     for (const cargo of cargos) {

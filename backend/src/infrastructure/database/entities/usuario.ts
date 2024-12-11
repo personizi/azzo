@@ -27,11 +27,14 @@ export class Usuario {
   @Column({ type: 'varchar', length: 45, unique: true })
   username: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  fotoUrl: string;
+
   @ManyToOne(() => Cidade, { nullable: true })
   @JoinColumn({ name: 'cidade_id' })
   cidade?: Cidade;
 
-  @ManyToOne(() => Cargo, { nullable: true })
+  @ManyToOne(() => Cargo, { onDelete: 'SET NULL', nullable: true })
   @JoinColumn({ name: 'cargo_id' })
   cargo?: Cargo;
 
